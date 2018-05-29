@@ -6,7 +6,7 @@ armySerialNumber: int = 24994
 starting_id: int = 24979
 ending_id: int = 25004
 
-fieldToId = {
+fieldToId: dict = {
     24979: 'term of enlistment',
     24980: 'longevity',
     24981: 'source of army personnel',
@@ -38,4 +38,4 @@ fieldToId = {
 state_ids = list()
 
 fieldedSearchUrl: str = 'https://aad.archives.gov/aad/fielded-search.jsp?dt=893'
-state_id_file_name = 'cl_2046.csv'
+state_id_file_name = 'resources/cl_2046.csv'
