@@ -1,12 +1,46 @@
-initialFieldId: int = 24979
-numFields: int = 25
+INITIAL_FIELD_ID: int = 24979
+NUM_FIELDS: int = 25
 
-armySerialNumber: int = 24994
+ARMY_SERIAL_NUMBER: int = 24994
 
-starting_id: int = 24979
-ending_id: int = 25004
+STARTING_ID: int = 24979
+ENDING_ID: int = 25004
 
-fieldToId: dict = {
+CONSTANT_FIELDS = [
+    ARMY_SERIAL_NUMBER,
+    24995,  # name
+    24996]  # residence: state
+
+FIELD_IDS = [
+    24979,
+    24980,
+    24981,
+    24982,
+    24983,
+    24984,
+    24985,
+    24986,
+    24987,
+    24988,
+    24989,
+    24990,
+    24991,
+    24992,
+    24993,
+    24994,
+    24995,
+    24996,
+    24997,
+    24998,
+    24999,
+    25000,
+    25001,
+    25002,
+    25003,
+    25004
+]
+
+FIELD_TO_ID: dict = {
     24979: 'term of enlistment',
     24980: 'longevity',
     24981: 'source of army personnel',
@@ -37,5 +71,12 @@ fieldToId: dict = {
 
 state_ids = list()
 
-fieldedSearchUrl: str = 'https://aad.archives.gov/aad/fielded-search.jsp?dt=893'
-state_id_file_name = 'resources/cl_2046.csv'
+FIELDED_SEARCH_URL: str = 'https://aad.archives.gov/aad/fielded-search.jsp?dt=893'
+STATE_ID_FILE_NAME = 'resources/cl_2046.csv'
+
+PAGE_NEXT_CSS_SELECTOR = '#results-section > form > div:nth-child(7) > a:nth-child(13)'
+# results-section > form > div:nth-child(7) > a:nth-child(11)
+# results-section > form > div:nth-child(7) > a:nth-child(11)
+PAGE_NEXT_XPATH = '//*[@id="results-section"]/form/div[2]/a[10]'
+
+SEARCH_BUTTON_CSS_SELECTOR = '#content > p:nth-child(6) > input:nth-child(2)'
