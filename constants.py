@@ -69,7 +69,7 @@ FIELD_TO_ID: dict = {
     25004: 'grade: alpha designation',
 }
 
-state_ids = list()
+STATE_IDS = list()
 
 FIELDED_SEARCH_URL: str = 'https://aad.archives.gov/aad/fielded-search.jsp?dt=893'
 STATE_ID_FILE_NAME = 'resources/cl_2046.csv'
