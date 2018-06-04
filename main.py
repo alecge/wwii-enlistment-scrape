@@ -14,3 +14,9 @@ while True:
     param_str, prev_field_id = generate_field_params(prev_field_id)
 
     get_data_from_fields(constants.FIELDED_SEARCH_URL + param_str)
+
+    if prev_field_id > constants.ENDING_ID:
+        browser.close()
+        break
+
+print('ALL DONE!!!!')

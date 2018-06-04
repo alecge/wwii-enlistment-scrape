@@ -3,6 +3,8 @@ import csv
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.remote.webelement import WebElement
+
 from typing import List
 from typing import Tuple
 
@@ -31,7 +33,7 @@ def generate_field_params(initial_id: int) -> Tuple[str, int]:
         # If the current field ID (cur_id) is not already added and it is smaller than the largest possible ID,
         # Add the current field ID to the params list
         if cur_id not in params and cur_id <= constants.ENDING_ID:
-            params.append(cur_id)
+            params.append(str(cur_id))
             num_params += 1
 
         cur_id += 1
@@ -59,6 +61,21 @@ def get_data_from_fields(url: str) -> None:
     # Get the fielded search url
     browser.get(url=url)
 
+    main_window = browser.current_window_handle
+
+    state_row: WebElement = browser.find_element_by_link_text('RESIDENCE: STATE').parent
+    state_row.find_element_by_link_text('Select from Code List').click()
+
+    popup_window = browser.window_handles[1]
+    browser.switch_to.window(popup_window)
+
+    for checkbox in browser.find_elements_by_tag_name('checkbox'):
+        checkbox.click()
+
+    browser.find_element_by_partial_link_text('Submit').click()
+
+    browser.switch_to.window(main_window)
+
     # Click the search button
     browser.find_element_by_link_text('Search').click()
     browser.implicitly_wait(2)
@@ -84,3 +101,5 @@ def get_data_from_fields(url: str) -> None:
         i += 1
 
     pass
+
+def select_all_states() -> None:
