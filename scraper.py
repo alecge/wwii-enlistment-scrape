@@ -69,23 +69,42 @@ def get_data_from_fields(url: str) -> None:
     popup_window = browser.window_handles[1]
     browser.switch_to.window(popup_window)
 
-    for checkbox in browser.find_elements_by_tag_name('checkbox'):
-        checkbox.click()
+    browser.implicitly_wait(3)
 
-    browser.find_element_by_partial_link_text('Submit').click()
+    print(browser.find_elements_by_tag_name('input'))
+
+    test = list()
+
+    for inputBox in browser.find_elements_by_tag_name('input'):
+        print(inputBox.get_attribute('outerHTML'))
+
+        if 'Submit' in inputBox.get_attribute('outerHTML'):
+            test.append(inputBox)
+        elif 'window.close()' not in inputBox.get_attribute('outerHTML'):
+            print("Clicking checkbox...")
+            inputBox.click()
+
+
+    # Click the submit button
+    print("Clicking submit...")
+    test[0].click()
 
     browser.switch_to.window(main_window)
 
+
     # Click the search button
-    browser.find_element_by_link_text('Search').click()
-    browser.implicitly_wait(2)
-    i = 0
+    for potentialSearchButton in browser.find_elements_by_tag_name('input'):
+        if 'Search' in potentialSearchButton.get_attribute('outerHTML'):
+            potentialSearchButton.click()
+            break
+
 
     for option in browser.find_element_by_id('rpp').find_elements_by_tag_name('option'):
         if option.text == '50':
             option.click()
             break
 
+    i = 0
     while True:
         # TODO: save the page source to a file
         with open('/root/' + str(i) + '.html', 'w') as outfile:
@@ -100,6 +119,3 @@ def get_data_from_fields(url: str) -> None:
 
         i += 1
 
-    pass
-
-def select_all_states() -> None:
