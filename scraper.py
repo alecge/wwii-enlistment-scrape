@@ -5,6 +5,8 @@ from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.remote.webelement import WebElement
 
+import os
+
 from typing import List
 from typing import Tuple
 
@@ -58,39 +60,14 @@ def populate_state_ids() -> None:
 
 
 def get_data_from_fields(url: str) -> None:
+
+    print('===================')
+    print('Searching URL {}'.format(url))
+
     # Get the fielded search url
     browser.get(url=url)
 
-    main_window = browser.current_window_handle
-
-    state_row: WebElement = browser.find_element_by_link_text('RESIDENCE: STATE').parent
-    state_row.find_element_by_link_text('Select from Code List').click()
-
-    popup_window = browser.window_handles[1]
-    browser.switch_to.window(popup_window)
-
-    browser.implicitly_wait(3)
-
-    print(browser.find_elements_by_tag_name('input'))
-
-    test = list()
-
-    for inputBox in browser.find_elements_by_tag_name('input'):
-        print(inputBox.get_attribute('outerHTML'))
-
-        if 'Submit' in inputBox.get_attribute('outerHTML'):
-            test.append(inputBox)
-        elif 'window.close()' not in inputBox.get_attribute('outerHTML'):
-            print("Clicking checkbox...")
-            inputBox.click()
-
-
-    # Click the submit button
-    print("Clicking submit...")
-    test[0].click()
-
-    browser.switch_to.window(main_window)
-
+    select_all_states()
 
     # Click the search button
     for potentialSearchButton in browser.find_elements_by_tag_name('input'):
@@ -98,16 +75,22 @@ def get_data_from_fields(url: str) -> None:
             potentialSearchButton.click()
             break
 
-
     for option in browser.find_element_by_id('rpp').find_elements_by_tag_name('option'):
         if option.text == '50':
             option.click()
             break
 
-    i = 0
+    folder_path = '/root/' + url.replace('/', '')
+    if not os.path.exists(folder_path):
+        print('Creating folder {}'.format(folder_path))
+        os.mkdir(folder_path)
+
+    print('Downloading all pages...', end='', flush=True)
+    i = 1
     while True:
-        # TODO: save the page source to a file
-        with open('/root/' + str(i) + '.html', 'w') as outfile:
+        file_path = folder_path + '/' + str(i).zfill(5) + '.html'
+
+        with open(file_path, 'w') as outfile:
             outfile.write(browser.page_source)
 
         if not browser.find_element_by_link_text('Next >'):
@@ -119,3 +102,35 @@ def get_data_from_fields(url: str) -> None:
 
         i += 1
 
+    print('Done')
+    print('===================')
+    browser.close()
+
+
+def select_all_states() -> None:
+    print('Selecting all states...', end='', flush=True)
+
+    main_window = browser.current_window_handle
+
+    state_row: WebElement = browser.find_element_by_link_text('RESIDENCE: STATE').parent
+    state_row.find_element_by_link_text('Select from Code List').click()
+
+    popup_window = browser.window_handles[1]
+    browser.switch_to.window(popup_window)
+
+    browser.implicitly_wait(3)
+
+    test = list()
+
+    for inputBox in browser.find_elements_by_tag_name('input'):
+        if 'Submit' in inputBox.get_attribute('outerHTML'):
+            test.append(inputBox)
+        elif 'window.close()' not in inputBox.get_attribute('outerHTML'):
+            inputBox.click()
+
+    print('Done')
+
+    # Click the submit button
+    test[0].click()
+
+    browser.switch_to.window(main_window)
