@@ -5,6 +5,8 @@ from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.remote.webelement import WebElement
 
+from pathlib import Path
+
 import os
 
 from typing import List
@@ -80,7 +82,7 @@ def get_data_from_fields(url: str) -> None:
             option.click()
             break
 
-    folder_path = '/root/' + url.replace('/', '')
+    folder_path = str(Path.home()) + '/' + url.replace('/', '')
     if not os.path.exists(folder_path):
         print('Creating folder {}'.format(folder_path))
         os.mkdir(folder_path)

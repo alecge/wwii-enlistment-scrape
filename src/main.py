@@ -1,4 +1,7 @@
 from scraper import *
+
+from selenium.common.exceptions import TimeoutException
+
 import constants
 
 # Assume army serial number is always the same
@@ -13,7 +16,10 @@ prev_field_id: int = constants.STARTING_ID
 while True:
     param_str, prev_field_id = generate_field_params(prev_field_id)
 
-    get_data_from_fields(constants.FIELDED_SEARCH_URL + '&' + param_str)
+    try:
+        get_data_from_fields(constants.FIELDED_SEARCH_URL + '&' + param_str)
+    except TimeoutException:
+        continue
 
     if prev_field_id > constants.ENDING_ID:
         browser.close()
