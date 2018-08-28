@@ -1,16 +1,16 @@
-import constants
 import csv
+import os
+from pathlib import Path
+from typing import List
+from typing import Tuple
+from typing import Set
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.remote.webelement import WebElement
+import datetime
 
-from pathlib import Path
-
-import os
-
-from typing import List
-from typing import Tuple
+import constants
 
 # Set the driver to the prebuilt docker container running on the same machine
 browser = webdriver.Remote(command_executor='http://localhost:4444/wd/hub',
@@ -62,7 +62,6 @@ def populate_state_ids() -> None:
 
 
 def get_data_from_fields(url: str) -> None:
-
     print('===================')
     print('Searching URL {}'.format(url))
 
@@ -136,3 +135,129 @@ def select_all_states() -> None:
     test[0].click()
 
     browser.switch_to.window(main_window)
+
+
+class Scraper:
+    __state_ids = list()
+    __browser = webdriver.Remote(command_executor='http://localhost:4444/wd/hub',
+                                 desired_capabilities=DesiredCapabilities.CHROME)
+
+    def __init__(self):
+        # If the state ID list is not populated, do that
+        if not self.__state_ids:
+            self.__populate_state_ids()
+
+        self.scraped_param_ids: Set[int] = set()
+
+    def __populate_state_ids(self) -> None:
+        with open(constants.STATE_ID_FILE_NAME) as state_id_file:
+            data = csv.reader(state_id_file)
+            for row in data:
+                self.__state_ids.append(row[0])
+
+        # Pop the first item off because the csv file's first row is "Code"
+        self.__state_ids = self.__state_ids[1:]
+
+    def __generate_params(self) -> str:
+        # The list of strings to be folded into a single string representing the
+        # parameters string in the url
+        request_param_list: List[str] = list()
+
+        # Append the field IDs that will always be needed
+        for field in constants.CONSTANT_FIELDS:
+            request_param_list.append('&')
+            request_param_list.append('sc=')
+            request_param_list.append(str(field))
+
+            self.scraped_param_ids.add(field)
+
+        num_fields: int = len(request_param_list) / 3
+
+        for id in constants.FIELD_IDS:
+            if num_fields <= 10:
+
+                if id not in self.scraped_param_ids:
+                    request_param_list.append('&')
+                    request_param_list.append('sc=')
+                    request_param_list.append(str(id))
+
+                    num_fields += 1
+
+            else:
+                break
+
+        return ''.join(request_param_list)
+
+    def __select_all_states(self):
+        print('Selecting all states...', end='', flush=True)
+
+        main_window = self.__browser.current_window_handle
+
+        state_row: WebElement = self.__browser.find_element_by_link_text('RESIDENCE: STATE').parent
+        state_row.find_element_by_link_text('Select from Code List').click()
+
+        popup_window = self.__browser.window_handles[1]
+        self.__browser.switch_to.window(popup_window)
+
+        self.__browser.implicitly_wait(3)
+
+        input_boxes = list()
+
+        # Click all <input> tags that aren't the submit button first because that's
+        # bad and closes the window and nono to that
+        for inputBox in self.__browser.find_elements_by_tag_name('input'):
+            if 'Submit' in inputBox.get_attribute('outerHTML'):
+                input_boxes.append(inputBox)
+            elif 'window.close()' not in inputBox.get_attribute('outerHTML'):
+                inputBox.click()
+
+        print('Done')
+
+        # Click the submit button
+        input_boxes[0].click()
+
+        self.__browser.switch_to.window(main_window)
+
+    def scrape(self) -> None:
+
+        while True:
+            params = self.__generate_params()
+
+            self.__browser.get(constants.FIELDED_SEARCH_URL + params)
+            self.__select_all_states()
+
+            # Click the search button
+            for potentialSearchButton in self.__browser.find_elements_by_tag_name('input'):
+                if 'Search' in potentialSearchButton.get_attribute('outerHTML'):
+                    potentialSearchButton.click()
+                    break
+
+            # Set to 50 results per page
+            for option in self.__browser.find_element_by_id('rpp').find_elements_by_tag_name('option'):
+                if option.text == '50':
+                    option.click()
+                    break
+
+            folder_path = Path.cwd() / '..' / 'data'
+            folder_path.resolve()
+            if not folder_path.exists():
+                folder_path.mkdir()
+
+            while True:
+                file_path = folder_path / datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                file_path.mkdir()
+
+                with file_path.open(mode='w') as outfile:
+                    outfile.write(self.__browser.page_source)
+
+                    if not self.__browser.find_element_by_link_text('Next >'):
+                        break
+                    else:
+                    # Hit next page
+                    self.__browser.find_element_by_link_text('Next >').click()
+                    self.__browser.implicitly_wait(2)
+
+
+
+
+        pass
