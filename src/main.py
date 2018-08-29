@@ -1,4 +1,5 @@
 from scraper import *
+import logging
 
 from selenium.common.exceptions import TimeoutException
 
@@ -11,26 +12,36 @@ import constants
 
 def main():
 
-    scraper = Scraper()
-    scraper.scrape()
+    logging.basicConfig(level=logging.DEBUG)
+    log = logging.getLogger(__name__)
 
-    # Populates the state_ids list from constants.py
-    populate_state_ids()
+    logging.getLogger('selenium').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
 
-    prev_field_id: int = constants.STARTING_ID
+    try:
+        scraper = Scraper()
+        scraper.scrape()
+    except Exception as err_msg:
+        log.error('Something went wrong: ', exc_info=True)
+        raise
 
-    while True:
-        param_str, prev_field_id = generate_field_params(prev_field_id)
-
-        try:
-            get_data_from_fields(constants.FIELDED_SEARCH_URL + '&' + param_str)
-        except TimeoutException:
-            continue
-
-        if prev_field_id > constants.ENDING_ID:
-            browser.close()
-            break
-
-    print('ALL DONE!!!!')
+    # # Populates the state_ids list from constants.py
+    # populate_state_ids()
+    #
+    # prev_field_id: int = constants.STARTING_ID
+    #
+    # while True:
+    #     param_str, prev_field_id = generate_field_params(prev_field_id)
+    #
+    #     try:
+    #         get_data_from_fields(constants.FIELDED_SEARCH_URL + '&' + param_str)
+    #     except TimeoutException:
+    #         continue
+    #
+    #     if prev_field_id > constants.ENDING_ID:
+    #         browser.close()
+    #         break
+    #
+    # print('ALL DONE!!!!')
 
 main()
