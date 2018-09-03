@@ -140,13 +140,18 @@ import constants
 #
 
 class Scraper:
-    # Set the driver to the prebuilt docker container running on the same machine
-    __browser = webdriver.Remote(command_executor='http://localhost:4444/wd/hub',
-                                 desired_capabilities=DesiredCapabilities.CHROME)
 
     def __init__(self):
         self.scraped_param_ids: Set[int] = set()
         self.log = logging.getLogger(__name__)
+        self.previous_page = 1
+
+        # Set the driver to the prebuilt docker container running on the same machine
+        self.__browser = webdriver.Remote(command_executor='http://chrome:4444/wd/hub',
+                                 desired_capabilities=DesiredCapabilities.CHROME)
+
+        self.__browser.implicitly_wait(2)
+        self.__browser.set_page_load_timeout(10)
 
     def __generate_params(self) -> Tuple[str, bool]:
         # The list of strings to be folded into a single string representing the
@@ -208,16 +213,21 @@ class Scraper:
 
         self.__browser.switch_to.window(main_window)
 
-    def scrape(self) -> None:
+    def get_previous_page(self) -> int:
+        return self.previous_page
+
+    def quit(self) -> None:
+        self.__browser.quit()
+
+    def scrape(self, start_page: int = 1) -> None:
         self.log.info('Starting scrape')
 
-        data_folder_path = Path.cwd() / '..' / 'data'
-        data_folder_path.resolve()
+        data_folder_path = (Path.cwd() / '..' / 'data').resolve()
         if not data_folder_path.exists():
             data_folder_path.mkdir()
 
         while True:
-            params, has_reached_end = self.__generate_params()
+            params, has_reached_end = self.__generate_params() # FIXME: Can use factory pattern instead
             self.log.debug('Scraping ' + params)
 
             self.__browser.get(constants.FIELDED_SEARCH_URL + params)
@@ -236,33 +246,48 @@ class Scraper:
                     option.click()
                     break
 
-            cur_path = data_folder_path / datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+            cur_path = (data_folder_path / datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')).resolve()
             if not cur_path.exists():
                 self.log.debug('Creating folder ' + str(cur_path))
                 cur_path.mkdir()
 
             # Used for file naming by page.
-            # Each file name is the page number padded to 5 digits with zeros
+            # Each file name is the page number padded to 6 digits with zeros
             counter = 1
+            self.previous_page = counter
+
+            self.log.info('Downloading HTML')
 
             while True:
-                file_name = str(counter).zfill(5) + '.html'
-                file_path = cur_path / file_name
 
-                with file_path.open(mode='w') as outfile:
-                    outfile.write(self.__browser.page_source)
-                    self.log.debug("Wrote to file at" + str(file_path))
+                if counter >= start_page:
+                    file_name = str(counter).zfill(6) + '.html'
+                    file_path = cur_path / file_name
 
-                    if not self.__browser.find_element_by_link_text('Next >'):
-                        self.log.info('Finished...onto the next one')
-                        break
-                    else:
+                    with file_path.open(mode='w') as outfile:
+                        outfile.write(self.__browser.page_source)
+                        self.log.debug("Wrote to file at" + str(file_path))
 
-                        # hit next page
-                        self.__browser.find_element_by_link_text('Next >').click()
-                        self.__browser.implicitly_wait(2)
+                if not self.__browser.find_element_by_link_text('Next >'):
+                    self.log.info('Finished...onto the next one')
+                    break
+                else:
+                    for attempt in range(10):
+                        try:
+                            # hit next page
+                            self.__browser.find_element_by_partial_link_text('Next >').click()
+                        except Exception as err_msg:
+                            self.__browser
+                            self.__browser.refresh()
+                            self.log.exception('Something bad happened when trying to download HTML! Retrying.... Exec info: ', exc_info=True)
+                        else:
+                            self.log.debug('No problems!')
+                            break
+
 
                 counter += 1
+
+            self.log.info('Finished this batch of requests!')
 
             self.__browser.close()
 

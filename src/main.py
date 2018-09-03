@@ -1,7 +1,7 @@
 from scraper import *
 import logging
-
-from selenium.common.exceptions import TimeoutException
+from pathlib import Path
+from time import sleep
 
 import constants
 
@@ -12,18 +12,35 @@ import constants
 
 def main():
 
-    logging.basicConfig(level=logging.DEBUG)
+    # Just in case the selenium server isn't up and running yet
+    sleep(3)
+
+    logging.basicConfig(level=logging.INFO)
     log = logging.getLogger(__name__)
 
     logging.getLogger('selenium').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
+    #
+    # log_path = (Path.cwd() / '..' / 'log').resolve()
+    # if not log_path.exists():
+    #     log_path.mkdir()
+    # else:
+    #     resume_file_path = (log_path / 'resume.txt').resolve()
+    #     if resume_file_path.exists():
+    #         with resume_file_path.open('r') as resume_file:
+    #             begin_page = resume_file.read()
+
+
 
     try:
         scraper = Scraper()
         scraper.scrape()
     except Exception as err_msg:
+        log.error('Crash on page #' + str(scraper.get_previous_page()))
         log.error('Something went wrong: ', exc_info=True)
         raise
+    finally:
+        scraper.quit()
 
     # # Populates the state_ids list from constants.py
     # populate_state_ids()
