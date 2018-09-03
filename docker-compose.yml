@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  python:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on:
+      - chrome
+
+  chrome:
+    image: selenium/standalone-chrome-debug
+    healthcheck:
+      test: wget -qO - http://chrome:4444/wd/hub || exit 1
+      interval: 3s
+      timeout: 3s
+      retries: 2
