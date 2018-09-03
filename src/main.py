@@ -5,13 +5,13 @@ from time import sleep
 
 import constants
 
+
 # Assume army serial number is always the same
 # First go over army serial number in one pass
 # Then go over subsequent fields always including the army serial number so a cross reference can be made
 
 
 def main():
-
     # Just in case the selenium server isn't up and running yet
     sleep(3)
 
@@ -30,10 +30,10 @@ def main():
     #         with resume_file_path.open('r') as resume_file:
     #             begin_page = resume_file.read()
 
-
+    scraper = Scraper()
 
     try:
-        scraper = Scraper()
+        scraper.init_driver()
         scraper.scrape()
     except Exception as err_msg:
         log.error('Crash on page #' + str(scraper.get_previous_page()))
@@ -60,5 +60,6 @@ def main():
     #         break
     #
     # print('ALL DONE!!!!')
+
 
 main()

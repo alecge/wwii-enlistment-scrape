@@ -146,12 +146,17 @@ class Scraper:
         self.log = logging.getLogger(__name__)
         self.previous_page = 1
 
-        # Set the driver to the prebuilt docker container running on the same machine
-        self.__browser = webdriver.Remote(command_executor='http://chrome:4444/wd/hub',
-                                 desired_capabilities=DesiredCapabilities.CHROME)
+        # Set the driver to None so it can be initialized later when needed
+        self.__browser = None
 
-        self.__browser.implicitly_wait(2)
-        self.__browser.set_page_load_timeout(10)
+    def init_driver(self) -> None:
+        if not self.__browser:
+            try:
+                self.__browser = webdriver.Remote(command_executor='http://chrome:4444/wd/hub',
+                                                  desired_capabilities=DesiredCapabilities.CHROME)
+            except Exception:
+                self.log.exception('Failed to initialize driver!')
+                raise
 
     def __generate_params(self) -> Tuple[str, bool]:
         # The list of strings to be folded into a single string representing the
@@ -220,6 +225,11 @@ class Scraper:
         self.__browser.quit()
 
     def scrape(self, start_page: int = 1) -> None:
+
+        if not self.__browser:
+            self.init_driver()
+            self.log.info('Driver not initialized before scraping! Initializing driver...')
+
         self.log.info('Starting scrape')
 
         data_folder_path = (Path.cwd() / '..' / 'data').resolve()
@@ -227,7 +237,7 @@ class Scraper:
             data_folder_path.mkdir()
 
         while True:
-            params, has_reached_end = self.__generate_params() # FIXME: Can use factory pattern instead
+            params, has_reached_end = self.__generate_params()  # FIXME: Can use factory pattern instead
             self.log.debug('Scraping ' + params)
 
             self.__browser.get(constants.FIELDED_SEARCH_URL + params)
@@ -279,11 +289,12 @@ class Scraper:
                         except Exception as err_msg:
                             self.__browser
                             self.__browser.refresh()
-                            self.log.exception('Something bad happened when trying to download HTML! Retrying.... Exec info: ', exc_info=True)
+                            self.log.exception(
+                                'Something bad happened when trying to download HTML! Retrying.... Exec info: ',
+                                exc_info=True)
                         else:
                             self.log.debug('No problems!')
                             break
-
 
                 counter += 1
 
