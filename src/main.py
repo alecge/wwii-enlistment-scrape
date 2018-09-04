@@ -15,7 +15,7 @@ def main():
     # Just in case the selenium server isn't up and running yet
     sleep(3)
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger(__name__)
 
     logging.getLogger('selenium').setLevel(logging.WARNING)

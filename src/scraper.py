@@ -232,9 +232,12 @@ class Scraper:
 
         self.log.info('Starting scrape')
 
-        data_folder_path = (Path.cwd() / '..' / 'data').resolve()
-        if not data_folder_path.exists():
-            data_folder_path.mkdir()
+        volume_folder_path = Path('/html').resolve()
+        bind_folder_path = Path('/scraped-data').resolve()
+
+        if not volume_folder_path.exists() or not bind_folder_path.exists():
+            self.log.exception("Folders /html or /scraped-data do not exist!")
+            raise FileNotFoundError("Folders /html or /scraped-data do not exist!")
 
         while True:
             params, has_reached_end = self.__generate_params()  # FIXME: Can use factory pattern instead
@@ -256,10 +259,15 @@ class Scraper:
                     option.click()
                     break
 
-            cur_path = (data_folder_path / datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')).resolve()
-            if not cur_path.exists():
-                self.log.debug('Creating folder ' + str(cur_path))
-                cur_path.mkdir()
+            volume_data = (volume_folder_path / datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')).resolve()
+            if not volume_data.exists():
+                self.log.debug('Creating folder ' + str(volume_data))
+                volume_data.mkdir()
+
+            bind_data = (bind_folder_path / datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')).resolve()
+            if not bind_data.exists():
+                self.log.debug('Creating folder ' + str(bind_data))
+                bind_data.mkdir()
 
             # Used for file naming by page.
             # Each file name is the page number padded to 6 digits with zeros
@@ -271,12 +279,19 @@ class Scraper:
             while True:
 
                 if counter >= start_page:
-                    file_name = str(counter).zfill(6) + '.html'
-                    file_path = cur_path / file_name
+                    volume_file_name = str(counter).zfill(6) + '.html'
+                    volume_file_path = volume_data / volume_file_name
 
-                    with file_path.open(mode='w') as outfile:
-                        outfile.write(self.__browser.page_source)
-                        self.log.debug("Wrote to file at" + str(file_path))
+                    bind_file_name = str(counter).zfill(6) + '.html'
+                    bind_file_path = bind_data / bind_file_name
+
+                    with volume_file_path.open(mode='w') as volume_outfile, bind_file_path.open(
+                            mode='w') as bind_outfile:
+                        volume_outfile.write(self.__browser.page_source)
+                        self.log.debug("Wrote to file at " + str(volume_file_path))
+
+                        bind_outfile.write(self.__browser.page_source)
+                        self.log.debug("Wrote to file at " + str(bind_file_path))
 
                 if not self.__browser.find_element_by_link_text('Next >'):
                     self.log.info('Finished...onto the next one')
@@ -287,7 +302,6 @@ class Scraper:
                             # hit next page
                             self.__browser.find_element_by_partial_link_text('Next >').click()
                         except Exception as err_msg:
-                            self.__browser
                             self.__browser.refresh()
                             self.log.exception(
                                 'Something bad happened when trying to download HTML! Retrying.... Exec info: ',
