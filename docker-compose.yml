@@ -7,9 +7,14 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - chrome
+    volumes:
+      - type: volume
+        source: html
+        target: /html
+
 
   chrome:
-    image: selenium/standalone-chrome-debug
+    image: selenium/standalone-chrome
     healthcheck:
       test: wget -qO - http://chrome:4444/wd/hub || exit 1
       interval: 3s
