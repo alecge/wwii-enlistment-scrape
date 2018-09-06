@@ -32,7 +32,8 @@ class Scraper:
         if not self.__browser:
             try:
                 self.__browser = webdriver.Remote(command_executor='http://chrome:4444/wd/hub',
-                                                  desired_capabilities=DesiredCapabilities.CHROME)
+                                                  desired_capabilities=DesiredCapabilities.CHROME,
+                                                  options='--disable-gpu')
             except Exception:
                 self.log.exception('Failed to initialize driver!')
                 raise
@@ -78,7 +79,7 @@ class Scraper:
         popup_window = self.__browser.window_handles[1]
         self.__browser.switch_to.window(popup_window)
 
-        self.__browser.implicitly_wait(3)
+        # self.__browser.implicitly_wait(3)
 
         input_boxes = list()
 

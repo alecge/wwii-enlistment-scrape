@@ -15,20 +15,18 @@ def main():
     # Just in case the selenium server isn't up and running yet
     sleep(3)
 
-    logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger(__name__)
+    log.setLevel(logging.DEBUG)
 
     logging.getLogger('selenium').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
-    #
-    # log_path = (Path.cwd() / '..' / 'log').resolve()
-    # if not log_path.exists():
-    #     log_path.mkdir()
-    # else:
-    #     resume_file_path = (log_path / 'resume.txt').resolve()
-    #     if resume_file_path.exists():
-    #         with resume_file_path.open('r') as resume_file:
-    #             begin_page = resume_file.read()
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
 
     scraper = Scraper()
 
