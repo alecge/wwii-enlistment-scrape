@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List
 from typing import Set
 from typing import Tuple
+import re
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -99,6 +100,50 @@ class Scraper:
     def get_previous_page(self) -> int:
         return self.previous_page
 
+    def __get_page_info(self) -> Tuple[int, int]:
+        page_text: str = str()
+        try:
+            page_text = self.__browser.find_element_by_css_selector('#content > '
+                                                                    'div:nth-child(''3)').text
+        except NoSuchElementException as not_found:
+            self.log.exception('Couldn\'t identify page number!', exc_info=True)
+            raise
+
+        match = re.match('Page (\d+) of (\d+)', page_text)
+        if match:
+            return int(match.group(1)), int(match.group(2))
+        else:
+            self.log.exception('Page number invalid!', exc_info=True)
+            raise ValueError('Could not match regex to the data on page')
+
+    def __get_current_page(self) -> int:
+        current_page, total_pages = self.__get_page_info()
+        self.log.debug('Current page: ' + str(current_page))
+        return current_page
+
+    def __get_num_pages(self) -> int:
+        current_page, total_pages = self.__get_page_info()
+        self.log.debug('Total pages: ' + str(total_pages))
+        return total_pages
+
+    def __init_instance_folders(self, volume_folder_path: Path, bind_folder_path: Path) -> Tuple[
+        Path, Path]:
+        volume_data = (volume_folder_path / datetime.datetime.now().strftime(
+            '%Y-%m-%d-%H:%M:%S')).resolve()
+        if not volume_data.exists():
+            self.log.debug('Creating folder ' + str(volume_data))
+            volume_data.mkdir()
+
+        bind_data = (bind_folder_path / datetime.datetime.now().strftime(
+            '%Y-%m-%d-%H:%M:%S')).resolve()
+        if not bind_data.exists():
+            self.log.debug('Creating folder ' + str(bind_data))
+            bind_data.mkdir()
+
+        self.log.debug('Created folders for this search\'s data')
+
+        return volume_data, bind_data
+
     def quit(self) -> None:
         self.__browser.quit()
 
@@ -118,7 +163,7 @@ class Scraper:
             raise FileNotFoundError("Folders /html or /scraped-data do not exist!")
 
         while True:
-            params, has_reached_end = self.__generate_params()  # FIXME: Can use factory pattern instead
+            params, has_reached_end = self.__generate_params()
             self.log.debug('Scraping ' + params)
 
             self.__browser.get(constants.FIELDED_SEARCH_URL + params)
@@ -132,64 +177,51 @@ class Scraper:
                     break
 
             # Set to 50 results per page
-            for option in self.__browser.find_element_by_id('rpp').find_elements_by_tag_name('option'):
+            for option in self.__browser.find_element_by_id('rpp').find_elements_by_tag_name(
+                    'option'):
                 if option.text == '50':
                     option.click()
                     break
 
-            volume_data = (volume_folder_path / datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')).resolve()
-            if not volume_data.exists():
-                self.log.debug('Creating folder ' + str(volume_data))
-                volume_data.mkdir()
+            # Save the current URL without the &pg=n argument for reuse over and over
+            url: str = self.__browser.current_url
+            if start_page > 1:
+                # It is GUARANTEED that the first page we download is the start page
+                self.__browser.get(url + '&pg=' + str(start_page))
 
-            bind_data = (bind_folder_path / datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')).resolve()
-            if not bind_data.exists():
-                self.log.debug('Creating folder ' + str(bind_data))
-                bind_data.mkdir()
-
-            # Used for file naming by page.
-            # Each file name is the page number padded to 6 digits with zeros
-            counter = 1
-            self.previous_page = counter
+            # Folders for this particular run
+            volume_data, bind_data = self.__init_instance_folders(volume_folder_path,
+                                                                  bind_folder_path)
 
             self.log.info('Downloading HTML')
 
             while True:
 
-                if counter >= start_page:
-                    volume_file_name = str(counter).zfill(6) + '.html'
-                    volume_file_path = volume_data / volume_file_name
+                cur_page = self.__get_current_page()
 
-                    bind_file_name = str(counter).zfill(6) + '.html'
-                    bind_file_path = bind_data / bind_file_name
+                # Used for file naming by page.
+                # Each file name is the page number padded to 6 digits with zeros
+                volume_file_name = str(cur_page).zfill(6) + '.html'
+                volume_file_path = volume_data / volume_file_name
 
-                    with volume_file_path.open(mode='w') as volume_outfile, bind_file_path.open(
-                            mode='w') as bind_outfile:
-                        volume_outfile.write(self.__browser.page_source)
-                        self.log.debug("Wrote to file at " + str(volume_file_path))
+                bind_file_name = str(cur_page).zfill(6) + '.html'
+                bind_file_path = bind_data / bind_file_name
 
-                        bind_outfile.write(self.__browser.page_source)
-                        self.log.debug("Wrote to file at " + str(bind_file_path))
+                with volume_file_path.open(mode='w') as volume_outfile, bind_file_path.open(
+                        mode='w') as bind_outfile:
+                    volume_outfile.write(self.__browser.page_source)
+                    self.log.debug("Wrote to file at " + str(volume_file_path))
 
-                if not self.__browser.find_elements_by_link_text('Next >'):
+                    bind_outfile.write(self.__browser.page_source)
+                    self.log.debug("Wrote to file at " + str(bind_file_path))
+
+                if cur_page < self.__get_num_pages():
+                    self.__browser.get(url + '&pg=' + str(cur_page + 1))
+                else:
                     self.log.info('Finished...onto the next one')
                     break
-                else:
-                    for attempt in range(10):
-                        try:
-                            # hit next page
-                            self.__browser.find_element_by_partial_link_text('Next >').click()
-                        except Exception as err_msg:
-                            self.__browser.refresh()
-                            self.__browser.get(self.__browser.current_url)
-                            self.log.exception(
-                                'Something bad happened when trying to download HTML! Retrying.... Exec info: ',
-                                exc_info=True)
-                        else:
-                            self.log.debug('No problems!')
-                            break
 
-                counter += 1
+                self.previous_page = cur_page
 
             self.log.info('Finished this batch of requests!')
 
