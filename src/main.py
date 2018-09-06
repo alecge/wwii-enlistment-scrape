@@ -16,7 +16,7 @@ def main():
     sleep(3)
 
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    log = logging.getLogger('')
+    log = logging.getLogger(__name__)
     log.setLevel(logging.DEBUG)
 
     logging.getLogger('selenium').setLevel(logging.WARNING)

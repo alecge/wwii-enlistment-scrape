@@ -17,17 +17,23 @@ from selenium.common.exceptions import NoSuchElementException
 
 import constants
 
+
 # TODO
 # Do the following things
+#
 # - Add resume mechanism so that it can resume from the page it left off.  I need to change
 #   the folder naming convention to something that will be consistent across runs of the same page
+#
+#   (DONE MAYBE)
 # - Add prevention mechanism: It will quit the chrome driver every ~500 pages or so to work around
 #   the issue with "[1536196465.016][SEVERE]: Timed out receiving message from renderer: -0.013"
+#
 # - Maybe try adding a docker healthcheck for the chrome container so that we might be able to rely
 #   on Docker to fix this issue.  If I do this I also have to add a recovery mechanism where if
 #   it times out I can try quickly a couple of times, then retry after delays (time the time it
 #   takes the chrome container to come up and then make sure it tries like every 5 seconds,
 #   potentially infinitely
+#
 # - Maybe pass through the docker socket so that I can control the docker spawning from inside the
 #   python container.  This seems pretty complicated but here's a link to start:
 #   https://stackoverflow.com/questions/38362415/how-can-i-connect-to-a-server-using-python-sockets-inside-a-docker-container
@@ -45,6 +51,10 @@ class Scraper:
         self.__browser: WebDriver = None
 
     def init_driver(self) -> None:
+        """
+        Initializes the web driver if it is None
+        :return: None
+        """
         if not self.__browser:
             try:
                 self.__browser = webdriver.Remote(command_executor='http://chrome:4444/wd/hub',
@@ -54,6 +64,12 @@ class Scraper:
                 raise
 
     def __generate_params(self) -> Tuple[str, bool]:
+        """
+        Generates the parameters to be used inside the URL
+
+        :return: A Tuple[str, bool] where the str is the parameters to be used in the URL and
+        whether or not the program has run through all of the parameters to be searched
+        """
         # The list of strings to be folded into a single string representing the
         # parameters string in the url
         request_param_list: List[str] = list()
@@ -84,6 +100,13 @@ class Scraper:
         return ''.join(request_param_list), constants.FIELD_IDS[-1] in self.scraped_param_ids
 
     def __select_all_states(self) -> None:
+        """
+        Selects all states via the pop-up dialogue.
+
+        This is required instead of just parameters in a GET request because the API for
+        archives.gov NARA is stateful
+        :return: None
+        """
         self.log.debug('Selecting all states')
 
         main_window = self.__browser.current_window_handle
@@ -114,6 +137,10 @@ class Scraper:
         self.__browser.switch_to.window(main_window)
 
     def get_previous_page(self) -> int:
+        """
+        Gets the previous page number that was downloaded
+        :return: The previous downloaded page number
+        """
         return self.previous_page
 
     def __get_page_info(self) -> Tuple[int, int]:
@@ -211,6 +238,10 @@ class Scraper:
 
             self.log.info('Downloading HTML')
 
+            # The number of times the page has loaded
+            # Get up to 500 times and then quit the driver then get it again
+            number_loads: int = 0
+
             while True:
 
                 cur_page = self.__get_current_page()
@@ -231,6 +262,17 @@ class Scraper:
                     bind_outfile.write(self.__browser.page_source)
                     self.log.debug("Wrote to file at " + str(bind_file_path))
 
+                # Periodically quit the chrome driver
+                # Maybe this will fix the problem with timing out
+                if number_loads >= 500:
+                    number_loads = 0
+                    self.quit()
+                    self.__browser = None
+                    self.init_driver()
+
+                # Instead of clicking the next button maybe it'll be better
+                # if every time a new URL is gotten
+                # Makes it easier to keep track of pages too
                 if cur_page < self.__get_num_pages():
                     self.__browser.get(url + '&pg=' + str(cur_page + 1))
                 else:
@@ -238,6 +280,8 @@ class Scraper:
                     break
 
                 self.previous_page = cur_page
+
+                number_loads += 1
 
             self.log.info('Finished this batch of requests!')
 
