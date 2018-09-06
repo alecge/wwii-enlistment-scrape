@@ -17,6 +17,21 @@ from selenium.common.exceptions import NoSuchElementException
 
 import constants
 
+# TODO
+# Do the following things
+# - Add resume mechanism so that it can resume from the page it left off.  I need to change
+#   the folder naming convention to something that will be consistent across runs of the same page
+# - Add prevention mechanism: It will quit the chrome driver every ~500 pages or so to work around
+#   the issue with "[1536196465.016][SEVERE]: Timed out receiving message from renderer: -0.013"
+# - Maybe try adding a docker healthcheck for the chrome container so that we might be able to rely
+#   on Docker to fix this issue.  If I do this I also have to add a recovery mechanism where if
+#   it times out I can try quickly a couple of times, then retry after delays (time the time it
+#   takes the chrome container to come up and then make sure it tries like every 5 seconds,
+#   potentially infinitely
+# - Maybe pass through the docker socket so that I can control the docker spawning from inside the
+#   python container.  This seems pretty complicated but here's a link to start:
+#   https://stackoverflow.com/questions/38362415/how-can-i-connect-to-a-server-using-python-sockets-inside-a-docker-container
+
 
 class Scraper:
 
