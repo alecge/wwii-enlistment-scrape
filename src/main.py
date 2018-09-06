@@ -15,18 +15,19 @@ def main():
     # Just in case the selenium server isn't up and running yet
     sleep(3)
 
-    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    log = logging.getLogger('')
     log.setLevel(logging.DEBUG)
 
     logging.getLogger('selenium').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(formatter)
-    log.addHandler(handler)
+    # handler = logging.StreamHandler()
+    # handler.setLevel(logging.DEBUG)
+    #
+    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # handler.setFormatter(formatter)
+    # log.addHandler(handler)
 
     scraper = Scraper()
 

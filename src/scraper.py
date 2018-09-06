@@ -37,7 +37,8 @@ class Scraper:
 
     def __init__(self):
         self.scraped_param_ids: Set[int] = set()
-        self.log = logging.getLogger(__name__)
+        self.log = logging.getLogger('scraper.Scraper')
+
         self.previous_page = 1
 
         # Set the driver to None so it can be initialized later when needed
@@ -47,8 +48,7 @@ class Scraper:
         if not self.__browser:
             try:
                 self.__browser = webdriver.Remote(command_executor='http://chrome:4444/wd/hub',
-                                                  desired_capabilities=DesiredCapabilities.CHROME,
-                                                  options='--disable-gpu')
+                                                  desired_capabilities=DesiredCapabilities.CHROME)
             except Exception:
                 self.log.exception('Failed to initialize driver!')
                 raise
