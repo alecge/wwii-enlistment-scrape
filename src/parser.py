@@ -12,25 +12,30 @@ class Parser:
     def __init__(self, path: str):
         self.__records: List[Record] = list()
         self.log = logging.getLogger('parser.Parser')
+        self.__hTreeml = None
 
         try:
-            self.doc_fp = Path(path).open('r')
+            with Path(path).open('r') as doc:
+                self.__hTreeml = BeautifulSoup(doc.read(), 'html.parser')
         except FileNotFoundError:
             self.log.exception("File doesn't exist!", exc_info=True)
             raise
 
-        self.__hTreeml = BeautifulSoup(self.doc_fp, 'html.parser')
-
-    def __process_records(self) -> List[Record]:
+    def __process_records(self) -> None:
         """
 
         :return:
         """
 
+        if self.__hTreeml is None:
+            self.log.exception("Does the HTML file exist? Parser couldn't initialize itself")
+            raise ValueError("HTML failed to load, cannot continue")
+
         table: Tag = self.__hTreeml.find(id="queryResults")
         if not table:
             self.log.error("Could not find results section in HTML!")
-            return None
+            # TODO: raise exception?
+            return
 
         field_name_row = table.thead.tr
         field_names: list = list()
@@ -45,8 +50,6 @@ class Parser:
                 temp_rec.add_field(field_name, td.string)
 
             self.__records.append(temp_rec)
-
-        return None
 
     def get_records(self) -> List[Record]:
         if not self.__records:
