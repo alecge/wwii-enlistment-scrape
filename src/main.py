@@ -30,16 +30,24 @@ def main():
     # log.addHandler(handler)
 
     scraper = Scraper()
+    page_num = 14097
 
-    try:
-        scraper.init_driver()
-        scraper.scrape()
-    except Exception as err_msg:
-        log.error('Crash on page #' + str(scraper.get_previous_page()))
-        log.error('Something went wrong: ', exc_info=True)
-        raise
-    finally:
-        scraper.quit()
+    while True:
+        try:
+            scraper.init_driver()
+            scraper.scrape(page_num)
+        except Exception as err_msg:
+            log.error('Crash on page #' + str(scraper.get_previous_page()))
+            log.error('Something went wrong: ', exc_info=True)
+            try:
+                scraper.quit()
+            except Exception:
+                log.exception('Failed to quit scraper')
+                pass
+            page_num = scraper.get_previous_page()
+            continue
+
+        log.info('Retrying...')
 
     # # Populates the state_ids list from constants.py
     # populate_state_ids()

@@ -25,7 +25,7 @@ import constants
 #   the folder naming convention to something that will be consistent across runs of the same page
 #
 #   (DONE MAYBE)
-# - Add prevention mechanism: It will quit the chrome driver every ~500 pages or so to work around
+# - Add prevention mechanism: It will quit the chrome driver every ~200 pages or so to work around
 #   the issue with "[1536196465.016][SEVERE]: Timed out receiving message from renderer: -0.013"
 #
 # - Maybe try adding a docker healthcheck for the chrome container so that we might be able to rely
@@ -37,6 +37,8 @@ import constants
 # - Maybe pass through the docker socket so that I can control the docker spawning from inside the
 #   python container.  This seems pretty complicated but here's a link to start:
 #   https://stackoverflow.com/questions/38362415/how-can-i-connect-to-a-server-using-python-sockets-inside-a-docker-container
+#
+# - TODO: Make it so that the url is also saved on crash
 
 
 class Scraper:
@@ -44,11 +46,15 @@ class Scraper:
     def __init__(self):
         self.scraped_param_ids: Set[int] = set()
         self.log = logging.getLogger('scraper.Scraper')
+        self.log.setLevel(logging.DEBUG)
 
         self.previous_page = 1
 
         # Set the driver to None so it can be initialized later when needed
         self.__browser: WebDriver = None
+
+        self.prev_param_string: str = ''  # TODO: use these
+        self.ending_id: int = 0
 
     def init_driver(self) -> None:
         """
@@ -189,8 +195,9 @@ class Scraper:
 
     def quit(self) -> None:
         self.__browser.quit()
+        self.__browser = None
 
-    def scrape(self, start_page: int = 1) -> None:
+    def scrape(self, start_page: int = 1, prev_params: str = '') -> None:
 
         if not self.__browser:
             self.init_driver()
@@ -206,7 +213,15 @@ class Scraper:
             raise FileNotFoundError("Folders /html or /scraped-data do not exist!")
 
         while True:
-            params, has_reached_end = self.__generate_params()
+            params = ''
+            has_reached_end = False
+
+            if not prev_params:
+                params, has_reached_end = self.__generate_params()
+            else:
+                params = prev_params
+            # TODO: see if this above code works
+            self.prev_param_string = params
             self.log.debug('Scraping ' + params)
 
             self.__browser.get(constants.FIELDED_SEARCH_URL + params)
@@ -239,7 +254,7 @@ class Scraper:
             self.log.info('Downloading HTML')
 
             # The number of times the page has loaded
-            # Get up to 500 times and then quit the driver then get it again
+            # Get up to 200 times and then quit the driver then get it again
             number_loads: int = 0
 
             while True:
@@ -264,11 +279,15 @@ class Scraper:
 
                 # Periodically quit the chrome driver
                 # Maybe this will fix the problem with timing out
-                if number_loads >= 500:
+                if number_loads >= 200:
                     number_loads = 0
+                    temp_url = self.__browser.current_url
+
                     self.quit()
                     self.__browser = None
                     self.init_driver()
+
+                    self.__browser.get(temp_url)
 
                 # Instead of clicking the next button maybe it'll be better
                 # if every time a new URL is gotten
