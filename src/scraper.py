@@ -1,19 +1,16 @@
-import csv
 import datetime
 import logging
-import os
+import re
 from pathlib import Path
 from typing import List
 from typing import Set
 from typing import Tuple
-import re
 
 from selenium import webdriver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.remote.webdriver import WebDriver
-
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 
 import constants
 
@@ -53,8 +50,7 @@ class Scraper:
         # Set the driver to None so it can be initialized later when needed
         self.__browser: WebDriver = None
 
-        self.prev_param_string: str = ''  # TODO: use these
-        self.ending_id: int = 0
+        self.prev_param_string: str = ''
 
     def init_driver(self) -> None:
         """
@@ -90,13 +86,13 @@ class Scraper:
 
         num_fields: int = len(request_param_list) / 3
 
-        for id in constants.FIELD_IDS:
+        for cur_id in constants.FIELD_IDS:
             if num_fields <= 10:
 
-                if id not in self.scraped_param_ids:
+                if cur_id not in self.scraped_param_ids:
                     request_param_list.append('&')
                     request_param_list.append('sc=')
-                    request_param_list.append(str(id))
+                    request_param_list.append(str(cur_id))
 
                     num_fields += 1
 
@@ -122,8 +118,6 @@ class Scraper:
 
         popup_window = self.__browser.window_handles[1]
         self.__browser.switch_to.window(popup_window)
-
-        # self.__browser.implicitly_wait(3)
 
         input_boxes = list()
 
@@ -154,7 +148,7 @@ class Scraper:
         try:
             page_text = self.__browser.find_element_by_css_selector('#content > '
                                                                     'div:nth-child(''3)').text
-        except NoSuchElementException as not_found:
+        except NoSuchElementException:
             self.log.exception('Couldn\'t identify page number!', exc_info=True)
             raise
 
@@ -175,8 +169,7 @@ class Scraper:
         self.log.debug('Total pages: ' + str(total_pages))
         return total_pages
 
-    def __init_instance_folders(self, volume_folder_path: Path, bind_folder_path: Path) -> Tuple[
-        Path, Path]:
+    def __init_instance_folders(self, volume_folder_path: Path, bind_folder_path: Path) -> Tuple[Path, Path]:
         volume_data = (volume_folder_path / datetime.datetime.now().strftime(
             '%Y-%m-%d-%H:%M:%S')).resolve()
         if not volume_data.exists():
@@ -220,7 +213,7 @@ class Scraper:
                 params, has_reached_end = self.__generate_params()
             else:
                 params = prev_params
-            # TODO: see if this above code works
+
             self.prev_param_string = params
             self.log.debug('Scraping ' + params)
 
