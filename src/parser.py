@@ -46,14 +46,11 @@ class Parser:
 
         for tr in table.tbody.children:
             if not isinstance(tr, str):
-                self.log.debug('TR element is ' + str(tr))
                 temp_rec: Record = Record()
 
                 # There are extraneous '\n' and other strings so get rid of them
                 # First tag in the list is an <img> element with a link so we discard it
                 no_strings: List[Tag] = [x for x in tr.contents if not isinstance(x, str)][1:]
-
-                print(no_strings)
 
                 for field_name, td in zip(field_names, no_strings):
                     temp_rec.add_field(field_name, td.string)
@@ -64,4 +61,4 @@ class Parser:
         if not self.__records:
             self.__process_records()
 
-        return copy.deepcopy(self.__records)
+        return self.__records
