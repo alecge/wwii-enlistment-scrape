@@ -1,3 +1,5 @@
+import copy
+import logging
 from pathlib import Path
 from typing import List
 
@@ -5,7 +7,6 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 
 from record import Record
-import logging
 
 
 class Parser:
@@ -43,16 +44,24 @@ class Parser:
             if th != "\n" and "View Record" not in th.string:
                 field_names.append(th.string)
 
-        table_body: Tag = table.tbody
-        for tr in table_body.children:
-            temp_rec = Record()
-            for td, field_name in zip(tr.contents[1:], field_names):
-                temp_rec.add_field(field_name, td.string)
+        for tr in table.tbody.children:
+            if not isinstance(tr, str):
+                self.log.debug('TR element is ' + str(tr))
+                temp_rec: Record = Record()
 
-            self.__records.append(temp_rec)
+                # There are extraneous '\n' and other strings so get rid of them
+                # First tag in the list is an <img> element with a link so we discard it
+                no_strings: List[Tag] = [x for x in tr.contents if not isinstance(x, str)][1:]
 
-    def get_records(self) -> List[Record]:
+                print(no_strings)
+
+                for field_name, td in zip(field_names, no_strings):
+                    temp_rec.add_field(field_name, td.string)
+
+                self.__records.append(temp_rec)
+
+    def parse(self) -> List[Record]:
         if not self.__records:
             self.__process_records()
 
-        return self.__records
+        return copy.deepcopy(self.__records)
