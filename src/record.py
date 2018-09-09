@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 from typing import List
 
+
 class Record:
     def __init__(self):
         self.__data: Dict[str, str] = dict()
@@ -21,4 +22,4 @@ class Record:
         return list(self.__data.keys())
 
     def get_fields(self) -> Dict[str, str]:
-        return copy.deepcopy(self.__data)
+        return self.__data

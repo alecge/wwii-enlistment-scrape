@@ -2,6 +2,7 @@ import csv
 import logging
 from pathlib import Path
 from typing import List
+from typing import Dict
 
 from record import Record
 
@@ -26,25 +27,23 @@ class RecordsToCsv:
             raise
 
         self.__path = self.__path / file_name
+        self.__csvfile = self.__path.open(mode='w', newline='')
+        self.__csvwriter: csv.DictWriter = None
 
-        self.__records: List[Record] = list()
+    def init_csv(self, field_names: List[str]):
+        if not field_names:
+            raise ValueError("Cannot write none as headers to csv")
+
+        self.__csvwriter = csv.DictWriter(self.__csvfile, fieldnames=field_names)
+        self.__csvwriter.writeheader()
 
     def add_to_csv(self, *args: Record) -> None:
-        if None in args:
+        if None in args or args is None:
             # TODO: raise exception
             raise ValueError("Cannot add None to CSV!!")
 
-        self.__records.extend(args)
+        for record in args:
+            self.__csvwriter.writerow(record.get_fields())
 
-    def write(self) -> None:
-        if not self.__records:
-            # TODO: log
-            raise ValueError("Cannot write zero records to csv!")
-
-        with self.__path.open(mode='w', newline='') as csvfile:
-            field_names = self.__records[0].get_field_names()
-            writer = csv.DictWriter(csvfile, fieldnames=field_names)
-
-            writer.writeheader()
-            for record in self.__records:
-                writer.writerow(record.get_fields())
+    def done(self) -> None:
+        self.__csvfile.close()
