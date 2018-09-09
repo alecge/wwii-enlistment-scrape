@@ -1,14 +1,7 @@
-from scraper import *
 import logging
-from pathlib import Path
 from time import sleep
 
-import constants
-
-
-# Assume army serial number is always the same
-# First go over army serial number in one pass
-# Then go over subsequent fields always including the army serial number so a cross reference can be made
+from scraper import *
 
 
 def main():
@@ -30,7 +23,7 @@ def main():
     # log.addHandler(handler)
 
     scraper = Scraper()
-    page_num = 14097
+    page_num = 19408
 
     while True:
         try:
@@ -48,25 +41,6 @@ def main():
             continue
 
         log.info('Retrying...')
-
-    # # Populates the state_ids list from constants.py
-    # populate_state_ids()
-    #
-    # prev_field_id: int = constants.STARTING_ID
-    #
-    # while True:
-    #     param_str, prev_field_id = generate_field_params(prev_field_id)
-    #
-    #     try:
-    #         get_data_from_fields(constants.FIELDED_SEARCH_URL + '&' + param_str)
-    #     except TimeoutException:
-    #         continue
-    #
-    #     if prev_field_id > constants.ENDING_ID:
-    #         browser.close()
-    #         break
-    #
-    # print('ALL DONE!!!!')
 
 
 main()
