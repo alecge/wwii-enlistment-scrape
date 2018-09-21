@@ -4,8 +4,7 @@ from time import sleep
 from scraper import *
 
 
-
-def main():
+def run_scraper():
     # Just in case the selenium server isn't up and running yet
     sleep(3)
 
@@ -24,7 +23,7 @@ def main():
     # log.addHandler(handler)
 
     scraper = Scraper()
-    page_num = 20938
+    page_num = 69476
 
     while True:
         try:
@@ -42,5 +41,14 @@ def main():
             continue
 
         log.info('Retrying...')
+
+
+def convert_html():
+    pass
+
+
+def main():
+    pass
+
 
 main()

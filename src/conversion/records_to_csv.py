@@ -2,9 +2,8 @@ import csv
 import logging
 from pathlib import Path
 from typing import List
-from typing import Dict
 
-from record import Record
+from data.record import Record
 
 
 class RecordsToCsv:

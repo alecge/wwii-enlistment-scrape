@@ -1,5 +1,5 @@
-from records_to_csv import RecordsToCsv
-from parser import Parser
+from conversion.records_to_csv import RecordsToCsv
+from conversion.parser import Parser
 from pathlib import Path
 import logging
 from typing import Set

@@ -1,4 +1,3 @@
-import copy
 import logging
 from pathlib import Path
 from typing import List
@@ -6,7 +5,7 @@ from typing import List
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from record import Record
+from data.record import Record
 
 
 class Parser:
