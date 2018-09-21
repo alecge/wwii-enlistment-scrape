@@ -33,6 +33,3 @@ def convert_to_csv():
                     converter.add_to_csv(*records)
 
     converter.done()
-
-
-convert_to_csv()

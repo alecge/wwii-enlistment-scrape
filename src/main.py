@@ -1,46 +1,15 @@
 import logging
-from time import sleep
+import argparse
+import subprocess
+import scraper.scraper as scraper
+import os
 
-from scraper import *
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
-
-def run_scraper():
-    # Just in case the selenium server isn't up and running yet
-    sleep(3)
-
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.DEBUG)
-
-    logging.getLogger('selenium').setLevel(logging.WARNING)
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-
-    # handler = logging.StreamHandler()
-    # handler.setLevel(logging.DEBUG)
-    #
-    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # handler.setFormatter(formatter)
-    # log.addHandler(handler)
-
-    scraper = Scraper()
-    page_num = 69476
-
-    while True:
-        try:
-            scraper.init_driver()
-            scraper.scrape(page_num)
-        except Exception as err_msg:
-            log.error('Crash on page #' + str(scraper.get_previous_page()))
-            log.error('Something went wrong: ', exc_info=True)
-            try:
-                scraper.quit()
-            except Exception:
-                log.exception('Failed to quit scraper')
-                pass
-            page_num = scraper.get_previous_page()
-            continue
-
-        log.info('Retrying...')
+logging.getLogger('selenium').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 
 def convert_html():
@@ -48,7 +17,25 @@ def convert_html():
 
 
 def main():
-    pass
+    argparser = argparse.ArgumentParser(
+        description="Scrape the site, convert HTML, and/or push to a PostgreSQL database")
+    argparser.add_argument("action")
+    argparser.add_argument("-D", action="store_true")
+
+    args = argparser.parse_args()
+
+    args = argparser.parse_args()
+    if args.action == "scrape":
+        if args.D:
+            scraper.run()
+        else:
+            p = subprocess.run(["docker-compose", "up", "--build"])
+    elif args.action == "csv":
+        pass
+    elif args.action == "postgres":
+        pass
+    else:
+        print("Invalid args")
 
 
 main()

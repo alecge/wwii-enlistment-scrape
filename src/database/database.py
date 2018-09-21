@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, Date
 from sqlalchemy.orm import sessionmaker
 
-with open("../postgres_info", 'r') as postgres_info:
+with open("./postgres_info", 'r') as postgres_info:
     user = postgres_info.readline().replace('\n', '')
     password = postgres_info.readline().replace('\n','')
     host = postgres_info.readline().replace('\n', '')
@@ -18,7 +18,7 @@ base = declarative_base()
 
 
 class Enlist(base):
-    __table_name__ = 'enlists'
+    __tablename__ = 'enlists'
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -52,6 +52,10 @@ Session = sessionmaker(db)
 session = Session()
 
 base.metadata.create_all(db)
+
+record = Enlist(army_serial_number="1234567")
+session.add(record)
+session.commit()
 
 
 class Database():

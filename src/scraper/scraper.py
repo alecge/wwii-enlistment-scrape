@@ -2,6 +2,7 @@ import datetime
 import logging
 import re
 from pathlib import Path
+from time import sleep
 from typing import List
 from typing import Set
 from typing import Tuple
@@ -13,7 +14,6 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 
 import constants
-
 
 # TODO
 # Do the following things
@@ -36,6 +36,9 @@ import constants
 #   https://stackoverflow.com/questions/38362415/how-can-i-connect-to-a-server-using-python-sockets-inside-a-docker-container
 #
 # - TODO: Make it so that the url is also saved on crash
+
+module_log = logging.getLogger('scraper')
+module_log.setLevel(logging.INFO)
 
 
 class Scraper:
@@ -169,7 +172,8 @@ class Scraper:
         self.log.debug('Total pages: ' + str(total_pages))
         return total_pages
 
-    def __init_instance_folders(self, volume_folder_path: Path, bind_folder_path: Path) -> Tuple[Path, Path]:
+    def __init_instance_folders(self, volume_folder_path: Path, bind_folder_path: Path) -> Tuple[
+        Path, Path]:
         volume_data = (volume_folder_path / datetime.datetime.now().strftime(
             '%Y-%m-%d-%H:%M:%S')).resolve()
         if not volume_data.exists():
@@ -206,7 +210,6 @@ class Scraper:
             raise FileNotFoundError("Folders /html or /scraped-data do not exist!")
 
         while True:
-            params = ''
             has_reached_end = False
 
             if not prev_params:
@@ -302,3 +305,26 @@ class Scraper:
             if has_reached_end:
                 self.log.info("All finished..yay!")
                 return
+
+
+def run():
+    sleep(3)
+    scraper = Scraper()
+    page_num = 69476
+
+    while True:
+        try:
+            scraper.init_driver()
+            scraper.scrape(page_num)
+        except Exception as err_msg:
+            module_log.error('Crash on page #' + str(scraper.get_previous_page()))
+            module_log.error('Something went wrong: ', exc_info=True)
+            try:
+                scraper.quit()
+            except Exception:
+                module_log.exception('Failed to quit scraper')
+                pass
+            page_num = scraper.get_previous_page()
+            continue
+
+        module_log.info('Retrying...')
