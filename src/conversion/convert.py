@@ -3,12 +3,20 @@ from conversion.parser import Parser
 from pathlib import Path
 import logging
 from typing import Set
+from database.database import setup, Database
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
+def write_to_db(db_config: str):
+
+    db = setup()
+
+
+
+# TODO: replace absolute paths with path passed in from argparse
 def convert_to_csv():
     converter = RecordsToCsv('/home/alec/scraped-data/')
 
@@ -33,3 +41,7 @@ def convert_to_csv():
                     converter.add_to_csv(*records)
 
     converter.done()
+
+
+def convert():
+    pass

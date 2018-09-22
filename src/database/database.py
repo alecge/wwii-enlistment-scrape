@@ -3,17 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, Date
 from sqlalchemy.orm import sessionmaker
 
-with open("./postgres_info", 'r') as postgres_info:
-    user = postgres_info.readline().replace('\n', '')
-    password = postgres_info.readline().replace('\n','')
-    host = postgres_info.readline().replace('\n', '')
-    port = postgres_info.readline().replace('\n', '')
-    dbname = postgres_info.readline().replace('\n', '')
+from data.record import Record
 
-db_string = "postgresql+psycopg2://{}:{}@{}:{}/{}".format(user, password, host, port,
-                                                                  dbname)
-
-db = create_engine(db_string)
 base = declarative_base()
 
 
@@ -48,19 +39,48 @@ class Enlist(base):
     card_number = Column(Integer)
 
 
-Session = sessionmaker(db)
-session = Session()
-
-base.metadata.create_all(db)
-
-record = Enlist(army_serial_number="1234567")
-session.add(record)
-session.commit()
+#
+# record = Enlist(army_serial_number="1234567")
+# session.add(record)
+# session.commit()
 
 
 class Database():
-    def __init__(self):
-        pass
+    def __init__(self, session):
+        self.session = session
 
-    def add(self, row: Enlist):
-        pass
+    def add(self, record: Record):
+        r = record.get_fields()
+
+        temp = Enlist()
+
+        for key, value in r:
+            setattr(temp, key, value)
+
+        self.session.add(temp)
+        self.session.commit()
+
+    def query(self, **kwargs):
+        records = self.session.query(Enlist)
+        for key, value in kwargs.items():
+            records = records.filter(getattr(Enlist, key) == value)
+
+
+def setup(db_config: str):
+    with open(db_config, 'r') as postgres_info:
+        user = postgres_info.readline().replace('\n', '')
+        password = postgres_info.readline().replace('\n', '')
+        host = postgres_info.readline().replace('\n', '')
+        port = postgres_info.readline().replace('\n', '')
+        dbname = postgres_info.readline().replace('\n', '')
+
+    db_string = "postgresql+psycopg2://{}:{}@{}:{}/{}".format(user, password, host, port,
+                                                              dbname)
+
+    db = create_engine(db_string)
+
+    Session = sessionmaker(db)
+    session = Session()
+    base.metadata.create_all(db)
+
+    return Database(session)
