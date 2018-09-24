@@ -49,15 +49,16 @@ class Database():
     def __init__(self, session):
         self.session = session
 
-    def add(self, record: Record):
-        r = record.get_fields()
+    def add(self, *args: Record):
+        for rec in args:
+            data = rec.get_fields()
+            temp = Enlist()
 
-        temp = Enlist()
+            for key, value in data:
+                setattr(temp, key, value)
 
-        for key, value in r:
-            setattr(temp, key, value)
+            self.session.add(temp)
 
-        self.session.add(temp)
         self.session.commit()
 
     def query(self, **kwargs):
@@ -66,7 +67,7 @@ class Database():
             records = records.filter(getattr(Enlist, key) == value)
 
 
-def setup(db_config: str):
+def setup_db(db_config: str):
     with open(db_config, 'r') as postgres_info:
         user = postgres_info.readline().replace('\n', '')
         password = postgres_info.readline().replace('\n', '')
